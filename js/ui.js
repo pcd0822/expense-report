@@ -345,6 +345,220 @@ const UI = {
     },
 
 
+    async renderHistory() {
+        const historyList = document.getElementById('historyList');
+        historyList.innerHTML = '<p class="loading-text">내역을 불러오는 중...</p>';
+
+        try {
+            let history = [];
+
+            if (CONFIG.getScriptUrl()) {
+                const data = await API.getHistory();
+                history = data.map(row => {
+                    return {
+                        id: row.ID || ('local_' + Date.now() + Math.random()),
+                        docName: row.DocumentName,
+                        totalAmount: row.TotalAmount,
+                        date: row.Date,
+                        items: JSON.parse(row.ItemsJSON || '[]')
+                    };
+                });
+            } else {
+                history = JSON.parse(localStorage.getItem('local_history') || '[]');
+            }
+
+            history.reverse();
+
+            historyList.innerHTML = '';
+            if (history.length === 0) {
+                historyList.innerHTML = '<p style="text-align:center; color:#999;">아직 작성된 지출 품의서가 없습니다.</p>';
+                return;
+            }
+
+            const table = document.createElement('table');
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th>문서명</th>
+                        <th>총액</th>
+                        <th>작성일</th>
+                        <th>작업</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            `;
+
+            window._historyData = history;
+
+            history.forEach((h, idx) => {
+                const tr = document.createElement('tr');
+                const d = new Date(h.date);
+                const dateStr = isNaN(d) ? h.date : d.toLocaleDateString();
+
+                tr.innerHTML = `
+                    <td>${h.docName}</td>
+                    <td>${Number(h.totalAmount).toLocaleString()}원</td>
+                    <td>${dateStr}</td>
+                    <td>
+                        <button class="btn small primary" onclick="UI.openHistoryDetail('${h.id}')">상세/수정</button>
+                    </td>
+                `;
+                table.querySelector('tbody').appendChild(tr);
+            });
+            historyList.appendChild(table);
+
+        } catch (e) {
+            console.error(e);
+            historyList.innerHTML = `<p class="error">내역을 불러오는데 실패했습니다: ${e.message}</p>`;
+        }
+    },
+
+    openHistoryDetail(id) {
+        const item = window._historyData.find(h => h.id == id);
+        if (!item) return;
+
+        window._currentEditId = id;
+
+        document.getElementById('historyListView').classList.add('hidden');
+        document.getElementById('historyDetailView').classList.remove('hidden');
+
+        document.getElementById('editDocName').value = item.docName;
+        document.getElementById('editTotalAmount').textContent = Number(item.totalAmount).toLocaleString();
+
+        const tbody = document.getElementById('editItemsTableBody');
+        tbody.innerHTML = '';
+
+        item.items.forEach(lineItem => {
+            this.addEditItemRow(lineItem);
+        });
+    },
+
+    addEditItemRow(data = null) {
+        const tbody = document.getElementById('editItemsTableBody');
+        const tr = document.createElement('tr');
+
+        const budgetOptions = '<option value="">선택</option>' + this.getBudgetOptionsHTML();
+
+        tr.innerHTML = `
+            <td style="text-align:center;"><button class="btn small error row-del-btn"><i class="fa-solid fa-xmark"></i></button></td>
+            <td>
+                <select class="table-input budget-select" required>${budgetOptions}</select>
+            </td>
+            <td><input type="text" class="table-input item-name" value="${data ? data.name : ''}"></td>
+            <td><input type="text" class="table-input" name="spec" value="${data ? data.spec : ''}"></td>
+            <td><input type="text" class="table-input number-input qty-input" value="${data ? data.qty : ''}" placeholder="0"></td>
+            <td><input type="text" class="table-input number-input price-input" value="${data ? data.price : ''}" placeholder="0"></td>
+            <td style="text-align:right;"><span class="row-total">${data ? data.itemTotal.toLocaleString() : '0'}</span></td>
+            <td><input type="text" class="table-input" name="vendor" value="${data ? data.vendor : ''}"></td>
+            <td class="shipping-cell">
+                 <div class="shipping-wrapper">
+                    <label><input type="checkbox" class="shipping-check" ${data && data.shipping > 0 ? 'checked' : ''}> 별도</label>
+                    <input type="text" class="table-input number-input shipping-input ${data && data.shipping > 0 ? '' : 'hidden'}" value="${data && data.shipping > 0 ? data.shipping : ''}" placeholder="금액">
+                </div>
+            </td>
+        `;
+
+        if (data) {
+            tr.querySelector('.budget-select').value = data.budgetName;
+        }
+
+        tbody.appendChild(tr);
+
+        const updateRow = () => {
+            const qty = this.parseLocaleNumber(tr.querySelector('.qty-input').value);
+            const price = this.parseLocaleNumber(tr.querySelector('.price-input').value);
+            const total = qty * price;
+            tr.querySelector('.row-total').textContent = total.toLocaleString();
+
+            this.calculateEditTotal();
+        };
+
+        tr.querySelectorAll('.number-input').forEach(input => {
+            if (input.value) this.formatNumberInput(input);
+            input.addEventListener('input', (e) => {
+                this.formatNumberInput(e.target);
+                updateRow();
+            });
+        });
+
+        const shipCheck = tr.querySelector('.shipping-check');
+        const shipInput = tr.querySelector('.shipping-input');
+        shipCheck.addEventListener('change', () => {
+            if (shipCheck.checked) {
+                shipInput.classList.remove('hidden');
+                shipInput.focus();
+            } else {
+                shipInput.classList.add('hidden');
+                shipInput.value = '';
+                updateRow();
+            }
+        });
+
+        tr.querySelector('.row-del-btn').addEventListener('click', () => {
+            tr.remove();
+            this.calculateEditTotal();
+        });
+    },
+
+    calculateEditTotal() {
+        const rows = document.querySelectorAll('#editItemsTableBody tr');
+        let grandTotal = 0;
+        rows.forEach(row => {
+            const qty = this.parseLocaleNumber(row.querySelector('.qty-input').value);
+            const price = this.parseLocaleNumber(row.querySelector('.price-input').value);
+            const itemTotal = qty * price;
+
+            let shipping = 0;
+            const shipCheck = row.querySelector('.shipping-check');
+            if (shipCheck && shipCheck.checked) {
+                shipping = this.parseLocaleNumber(row.querySelector('.shipping-input').value);
+            }
+            grandTotal += (itemTotal + shipping);
+        });
+        document.getElementById('editTotalAmount').textContent = grandTotal.toLocaleString();
+    },
+
+    getEditFormData() {
+        const docName = document.getElementById('editDocName').value;
+        if (!docName) { alert('문서명을 입력해주세요.'); return null; }
+
+        const items = [];
+        const rows = document.querySelectorAll('#editItemsTableBody tr');
+        for (let row of rows) {
+            const name = row.querySelector('.item-name').value;
+            if (!name) continue;
+
+            const budgetName = row.querySelector('.budget-select').value;
+            if (!budgetName) { alert('예산 항목을 선택해주세요.'); return null; }
+
+            const qty = this.parseLocaleNumber(row.querySelector('.qty-input').value);
+            const price = this.parseLocaleNumber(row.querySelector('.price-input').value);
+
+            let shipping = 0;
+            if (row.querySelector('.shipping-check').checked) {
+                shipping = this.parseLocaleNumber(row.querySelector('.shipping-input').value);
+            }
+
+            const itemTotal = qty * price;
+
+            items.push({
+                budgetName, name,
+                spec: row.querySelector('input[name="spec"]').value,
+                qty, price, itemTotal, shipping,
+                total: itemTotal + shipping,
+                vendor: row.querySelector('input[name="vendor"]').value
+            });
+        }
+
+        if (items.length === 0) { alert('최소 1개의 항목이 필요합니다.'); return null; }
+
+        return {
+            docName,
+            items,
+            totalAmount: this.parseLocaleNumber(document.getElementById('editTotalAmount').textContent)
+        };
+    },
+
     // Copy Shared Link Logic
     copySharedLink() {
         const url = new URL(window.location.href);
@@ -355,15 +569,3 @@ const UI = {
     }
 };
 
-window.viewHistoryItem = (idx) => {
-    const item = window._tempHistory ? window._tempHistory[idx] : null;
-    if (item) {
-        // Pretty print items
-        let msg = `[${item.docName}]\n`;
-        item.items.forEach(i => {
-            msg += `- ${i.name} / ${i.qty}개 / ${i.total.toLocaleString()}원 (배송비: ${i.shipping})\n`;
-        });
-        msg += `\n총 합계: ${Number(item.totalAmount).toLocaleString()}원`;
-        alert(msg);
-    }
-}
