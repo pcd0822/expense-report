@@ -76,5 +76,45 @@ const API = {
 
         const response = await fetch(`${url}?action=getHistory`);
         return await response.json();
+    },
+
+    async deleteHistory(id) {
+        const url = CONFIG.getScriptUrl();
+        if (!url) {
+            // Mock: Remove from local
+            let history = JSON.parse(localStorage.getItem('local_history') || '[]');
+            history = history.filter(h => h.id !== id);
+            localStorage.setItem('local_history', JSON.stringify(history));
+            return { success: true };
+        }
+
+        const formData = new FormData();
+        formData.append('action', 'deleteHistory');
+        // If ID includes "local_", it's local msg. 
+        formData.append('data', JSON.stringify({ id: id }));
+
+        const response = await fetch(url, { method: 'POST', body: formData });
+        return await response.json();
+    },
+
+    async updateHistory(id, data) {
+        const url = CONFIG.getScriptUrl();
+        if (!url) {
+            // Mock
+            let history = JSON.parse(localStorage.getItem('local_history') || '[]');
+            const idx = history.findIndex(h => h.id === id);
+            if (idx >= 0) {
+                history[idx] = { ...history[idx], ...data };
+                localStorage.setItem('local_history', JSON.stringify(history));
+            }
+            return { success: true };
+        }
+
+        const formData = new FormData();
+        formData.append('action', 'updateHistory');
+        formData.append('data', JSON.stringify({ id: id, ...data }));
+
+        const response = await fetch(url, { method: 'POST', body: formData });
+        return await response.json();
     }
 };
