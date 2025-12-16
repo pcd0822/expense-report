@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>귀여운 품의서 생성기 🎀</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Gaegu:wght@300;400;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/styles.css">
+
+    <!-- Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+</head>
+
+<body>
+
+    <div class="app-container">
+        <header class="main-header">
+            <h1><i class="fa-solid fa-calculator"></i> 몽글몽글 예산 품의서 ☁️</h1>
+            <p>귀엽고 간편하게 예산을 관리해보세요!</p>
+        </header>
+
+        <nav class="main-nav">
+            <button class="nav-btn active" data-tab="tab1"><i class="fa-solid fa-sack-dollar"></i> 예산 관리</button>
+            <button class="nav-btn" data-tab="tab2"><i class="fa-solid fa-file-invoice"></i> 품의서 작성</button>
+            <button class="nav-btn" data-tab="tab3"><i class="fa-solid fa-clock-rotate-left"></i> 내역 관리</button>
+            <button class="nav-btn" data-tab="tab4"><i class="fa-solid fa-share-nodes"></i> 작성 공유</button>
+        </nav>
+
+        <main class="content-area">
+            <!-- TAB 1: Budget Management -->
+            <section id="tab1" class="tab-content active">
+                <div class="card">
+                    <h2>📥 예산 업로드</h2>
+                    <p class="description">표준 엑셀 서식을 다운로드하여 예산 내용을 입력한 후 업로드해주세요.</p>
+
+                    <div class="action-buttons">
+                        <button id="downloadTemplateBtn" class="btn secondary"><i class="fa-solid fa-download"></i> 표준
+                            서식 다운로드</button>
+                    </div>
+
+                    <div class="upload-area" id="dropZone">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                        <p>엑셀 파일을 여기에 드래그하거나 클릭해서 업로드하세요.</p>
+                        <input type="file" id="budgetFileInput" accept=".xlsx, .xls" hidden>
+                    </div>
+
+                    <div id="budgetPreview" class="hidden">
+                        <h3>📋 예산 목록 미리보기</h3>
+                        <div class="table-container">
+                            <table id="budgetTable">
+                                <thead>
+                                    <tr>
+                                        <th>세부항목</th>
+                                        <th>원가통계비목</th>
+                                        <th>산출내역</th>
+                                        <th>예산액</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                        <button id="saveBudgetBtn" class="btn primary full-width"><i
+                                class="fa-solid fa-floppy-disk"></i> 데이터베이스에 저장하기</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: Request Creation -->
+            <section id="tab2" class="tab-content">
+                <div class="dashboard-grid">
+                    <div class="card chart-card">
+                        <h2>📊 예산 현황</h2>
+                        <div class="chart-controls">
+                            <button id="prevChartBtn" class="icon-btn"><i class="fa-solid fa-chevron-left"></i></button>
+                            <div class="chart-wrapper">
+                                <canvas id="budgetChart"></canvas>
+                            </div>
+                            <button id="nextChartBtn" class="icon-btn"><i
+                                    class="fa-solid fa-chevron-right"></i></button>
+                        </div>
+                        <p id="currentBudgetName" class="chart-label">-</p>
+                    </div>
+
+                    <div class="card form-card">
+                        <h2>📝 지출 품의서 작성</h2>
+
+                        <div class="form-group">
+                            <label>문서명</label>
+                            <input type="text" id="docName" placeholder="예: 4월 사무용품 구입 건">
+                        </div>
+
+                        <div class="form-group">
+                            <label>예산 선택 (산출내역)</label>
+                            <select id="budgetSelect">
+                                <option value="">선택해주세요</option>
+                            </select>
+                        </div>
+
+                        <div class="items-section">
+                            <div class="items-header">
+                                <h3>물품 목록</h3>
+                                <div class="item-actions">
+                                    <button id="addRowBtn" class="btn small"><i class="fa-solid fa-plus"></i> 행
+                                        추가</button>
+                                    <button id="deleteModeBtn" class="btn small error"><i class="fa-solid fa-trash"></i>
+                                        삭제 모드</button>
+                                </div>
+                            </div>
+
+                            <table id="itemsTable">
+                                <thead>
+                                    <tr>
+                                        <th class="check-col hidden">선택</th>
+                                        <th>물품명</th>
+                                        <th>규격</th>
+                                        <th>수량</th>
+                                        <th>단가</th>
+                                        <th>총액</th>
+                                        <th>구입처</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="itemsTableBody">
+                                    <!-- Dynamic Rows -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="form-group checkbox-group">
+                            <input type="checkbox" id="shippingToggle">
+                            <label for="shippingToggle">배송비 별도</label>
+                        </div>
+
+                        <div id="shippingInputArea" class="form-group hidden">
+                            <label>배송비</label>
+                            <input type="number" id="shippingCost" placeholder="0">
+                        </div>
+
+                        <div class="summary-area">
+                            <span>총 합계: <strong id="totalAmount">0</strong> 원</span>
+                        </div>
+
+                        <div class="action-buttons">
+                            <button id="generateExcelBtn" class="btn secondary"><i class="fa-solid fa-file-excel"></i>
+                                품의서 파일 생성</button>
+                            <button id="submitRequestBtn" class="btn primary"><i class="fa-solid fa-paper-plane"></i> 작성
+                                및 제출</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 3: History -->
+            <section id="tab3" class="tab-content">
+                <div class="card">
+                    <h2>📜 지출 내역 관리</h2>
+                    <div class="history-list" id="historyList">
+                        <!-- History Items -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 4: Shared Mode -->
+            <section id="tab4" class="tab-content">
+                <div class="card">
+                    <h2>🔗 공유 모드</h2>
+                    <p>이 기능은 Tab 2와 Tab 3를 공유자에게 제공하며, 현재 데이터베이스와 연동됩니다.</p>
+                    <div class="input-group">
+                        <label>Google Apps Script URL 입력:</label>
+                        <input type="text" id="sharedApiUrl" placeholder="https://script.google.com/macros/s/...">
+                        <button id="connectSharedBtn" class="btn primary">연동하기</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="loadingModal" class="modal hidden">
+        <div class="modal-content loading">
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            <p>처리 중입니다...</p>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/excel.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>
