@@ -1,0 +1,22 @@
+/* Shipping input styling */
+.shipping-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-size: 0.9rem;
+}
+
+.shipping-input {
+    width: 60px !important;
+    padding: 5px !important;
+    font-size: 0.9rem !important;
+}
+
+.shared-mode .main-header {
+    display: none;
+}
+
+/* Make table cells handle selects and inputs better */
+.budget-select {
+    min-width: 120px;
+}
