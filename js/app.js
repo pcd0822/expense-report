@@ -165,6 +165,18 @@ function setupEventListeners() {
             UI.showLoading(false);
         }
     });
+
+    const histPdfBtn = document.getElementById('generateHistoryPdfBtn');
+    if (histPdfBtn) histPdfBtn.addEventListener('click', () => {
+        const data = UI.getEditFormData();
+        if (!data) return;
+
+        // Retrieve original date if possible to keep consistency
+        const histItem = window._historyData ? window._historyData.find(h => h.id == window._currentEditId) : null;
+        data.date = histItem ? histItem.date : new Date();
+
+        generateAndPrintPDF(data);
+    });
 }
 
 // Handler Functions
