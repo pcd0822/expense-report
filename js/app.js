@@ -112,6 +112,59 @@ function setupEventListeners() {
 
     const saveBudgetBtn = document.getElementById('saveBudgetBtn');
     if (saveBudgetBtn) saveBudgetBtn.addEventListener('click', handleSaveBudget);
+
+    // History Edit Mode Listeners
+    const backBtn = document.getElementById('backToListBtn');
+    if (backBtn) backBtn.addEventListener('click', () => {
+        document.getElementById('historyDetailView').classList.add('hidden');
+        document.getElementById('historyListView').classList.remove('hidden');
+    });
+
+    const editAddRow = document.getElementById('editAddRowBtn');
+    if (editAddRow) editAddRow.addEventListener('click', () => UI.addEditItemRow());
+
+    const delHistBtn = document.getElementById('deleteHistoryBtn');
+    if (delHistBtn) delHistBtn.addEventListener('click', async () => {
+        if (!confirm('정말 삭제하시겠습니까? 예산에서 차감된 금액이 복구됩니다.')) return;
+
+        UI.showLoading(true);
+        try {
+            await API.deleteHistory(window._currentEditId);
+            alert('삭제되었습니다.');
+            document.getElementById('backToListBtn').click();
+            UI.renderHistory();
+
+            // Refresh budget too
+            await loadInitialData();
+        } catch (e) {
+            alert('삭제 실패: ' + e.message);
+        } finally {
+            UI.showLoading(false);
+        }
+    });
+
+    const updateHistBtn = document.getElementById('updateHistoryBtn');
+    if (updateHistBtn) updateHistBtn.addEventListener('click', async () => {
+        const data = UI.getEditFormData();
+        if (!data) return;
+
+        if (!confirm('수정사항을 저장하시겠습니까? 예산 사용액이 재계산됩니다.')) return;
+
+        UI.showLoading(true);
+        try {
+            await API.updateHistory(window._currentEditId, data);
+            alert('수정되었습니다.');
+            // Reload history logic?
+            document.getElementById('backToListBtn').click();
+            UI.renderHistory();
+
+            await loadInitialData();
+        } catch (e) {
+            alert('수정 실패: ' + e.message);
+        } finally {
+            UI.showLoading(false);
+        }
+    });
 }
 
 // Handler Functions
@@ -205,6 +258,7 @@ async function loadInitialData(forceLocal = false) {
         }
 
         UI.renderBudgetPreview(budgetData);
+        UI.updateBudgetDropdown(budgetData);
         UI.renderBudgetChart(window.appState.budgetItems);
     } catch (e) {
         console.error(e);
