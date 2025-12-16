@@ -16,10 +16,12 @@
 
     <!-- Styles -->
     <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/styles-extra.css">
 
     <!-- Libraries -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 
 <body>
@@ -100,12 +102,7 @@
                             <input type="text" id="docName" placeholder="예: 4월 사무용품 구입 건">
                         </div>
 
-                        <div class="form-group">
-                            <label>예산 선택 (산출내역)</label>
-                            <select id="budgetSelect">
-                                <option value="">선택해주세요</option>
-                            </select>
-                        </div>
+                        <!-- Budget Select moved to Row Item -->
 
                         <div class="items-section">
                             <div class="items-header">
@@ -122,12 +119,14 @@
                                 <thead>
                                     <tr>
                                         <th class="check-col hidden">선택</th>
+                                        <th style="width: 20%;">예산항목</th>
                                         <th>물품명</th>
-                                        <th>규격</th>
-                                        <th>수량</th>
-                                        <th>단가</th>
-                                        <th>총액</th>
-                                        <th>구입처</th>
+                                        <th style="width: 10%;">규격</th>
+                                        <th style="width: 8%;">수량</th>
+                                        <th style="width: 12%;">단가</th>
+                                        <th style="width: 12%;">총액</th>
+                                        <th style="width: 15%;">구입처</th>
+                                        <th style="width: 10%;">배송비</th>
                                     </tr>
                                 </thead>
                                 <tbody id="itemsTableBody">
@@ -136,23 +135,15 @@
                             </table>
                         </div>
 
-                        <div class="form-group checkbox-group">
-                            <input type="checkbox" id="shippingToggle">
-                            <label for="shippingToggle">배송비 별도</label>
-                        </div>
-
-                        <div id="shippingInputArea" class="form-group hidden">
-                            <label>배송비</label>
-                            <input type="number" id="shippingCost" placeholder="0">
-                        </div>
+                        <!-- Shipping moved to Row Item -->
 
                         <div class="summary-area">
                             <span>총 합계: <strong id="totalAmount">0</strong> 원</span>
                         </div>
 
                         <div class="action-buttons">
-                            <button id="generateExcelBtn" class="btn secondary"><i class="fa-solid fa-file-excel"></i>
-                                품의서 파일 생성</button>
+                            <button id="generatePdfBtn" class="btn secondary"><i class="fa-solid fa-file-pdf"></i> 품의서
+                                PDF 생성</button>
                             <button id="submitRequestBtn" class="btn primary"><i class="fa-solid fa-paper-plane"></i> 작성
                                 및 제출</button>
                         </div>
