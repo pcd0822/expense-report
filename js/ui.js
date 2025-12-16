@@ -84,19 +84,22 @@ const UI = {
         return items.map(item => `<option value="${item['산출내역']}">${item['산출내역']}</option>`).join('');
     },
 
-    // Updated to remove global dropdown update, not needed anymore
+    // Updates existing rows with new budget data
     updateBudgetDropdown(data) {
-        // Just update internal ref or re-render existing rows?
-        // For simplicity, we just clear and re-add rows or let user add new rows.
-        // Existing rows might loose selection if we strictly re-render.
-        // We'll just update the template for NEW rows.
-        // If we wanted to update existing rows options, we'd need to iterate them.
-        const rows = document.querySelectorAll('#itemsTableBody tr');
-        rows.forEach(row => {
-            const select = row.querySelector('.budget-select');
+        // Re-generate options HTML
+        const optionsHTML = '<option value="">선택</option>' + this.getBudgetOptionsHTML();
+
+        // Update all existing selects
+        const selects = document.querySelectorAll('.budget-select');
+        selects.forEach(select => {
             const currentVal = select.value;
-            select.innerHTML = '<option value="">선택</option>' + this.getBudgetOptionsHTML();
-            select.value = currentVal;
+            select.innerHTML = optionsHTML;
+            // Restore selection if valid
+            if (currentVal && Array.from(select.options).some(o => o.value === currentVal)) {
+                select.value = currentVal;
+            } else {
+                select.value = "";
+            }
         });
     },
 
