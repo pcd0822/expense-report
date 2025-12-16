@@ -46,6 +46,8 @@ const UI = {
         });
 
         if (tabId === 'tab3') {
+            document.getElementById('historyListView').classList.remove('hidden');
+            document.getElementById('historyDetailView').classList.add('hidden');
             this.renderHistory();
         }
     },
@@ -342,79 +344,6 @@ const UI = {
         };
     },
 
-    async renderHistory() {
-        const historyList = document.getElementById('historyList');
-        historyList.innerHTML = '<p class="loading-text">내역을 불러오는 중...</p>';
-
-        try {
-            let history = [];
-
-            if (CONFIG.getScriptUrl()) {
-                // Fetch from server if connected
-                const data = await API.getHistory();
-                // Map server data to frontend format
-                history = data.map(row => {
-                    // row: {Date, DocumentName, TotalAmount, ItemsJSON, ...} keys depend on header case
-                    // Headers in server.gs: ['Date', 'DocumentName', 'TotalAmount', 'ItemsJSON']
-                    // doGet returns object with keys matching headers.
-                    return {
-                        docName: row.DocumentName,
-                        totalAmount: row.TotalAmount,
-                        date: row.Date,
-                        items: JSON.parse(row.ItemsJSON || '[]') // Server stores stringified JSON
-                    };
-                });
-            } else {
-                // Local only
-                history = JSON.parse(localStorage.getItem('local_history') || '[]');
-            }
-
-            // Descending order
-            history.reverse();
-
-            historyList.innerHTML = '';
-            if (history.length === 0) {
-                historyList.innerHTML = '<p style="text-align:center; color:#999;">아직 작성된 지출 품의서가 없습니다.</p>';
-                return;
-            }
-
-            const table = document.createElement('table');
-            table.innerHTML = `
-                <thead>
-                    <tr>
-                        <th>문서명</th>
-                        <th>총액</th>
-                        <th>작성일</th>
-                        <th>작업</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            `;
-
-            history.forEach((h, idx) => {
-                const tr = document.createElement('tr');
-                const d = new Date(h.date);
-                const dateStr = isNaN(d) ? h.date : d.toLocaleDateString();
-
-                tr.innerHTML = `
-                    <td>${h.docName}</td>
-                    <td>${Number(h.totalAmount).toLocaleString()}원</td>
-                    <td>${dateStr}</td>
-                    <td>
-                        <button class="btn small primary" onclick="viewHistoryItem(${idx})">상세보기</button>
-                    </td>
-                `;
-                table.querySelector('tbody').appendChild(tr);
-            });
-            historyList.appendChild(table);
-
-            // Store simple history for view logic
-            window._tempHistory = history;
-
-        } catch (e) {
-            historyList.innerHTML = `<p class="error">내역을 불러오는데 실패했습니다: ${e.message}</p>`;
-        }
-    },
 
     // Copy Shared Link Logic
     copySharedLink() {
