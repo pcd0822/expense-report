@@ -268,72 +268,105 @@ async function loadInitialData(forceLocal = false) {
 }
 
 function generateAndPrintPDF(data) {
+    // Determine Font (Gothic style)
+    const fontStyle = "font-family: 'Malgun Gothic', 'Dotum', 'AppleGothic', 'sans-serif';";
+
     // Create the HTML structure for the PDF
     const printable = document.createElement('div');
     printable.id = 'pdf-invoice';
-    printable.style.padding = '30px';
-    printable.style.fontFamily = "'Noto Sans KR', sans-serif";
+    printable.style.cssText = `
+        padding: 40px; 
+        ${fontStyle} 
+        width: 210mm; 
+        min-height: 297mm; 
+        background: white; 
+        color: #000;
+        position: absolute; 
+        left: -9999px; 
+        top: 0;
+    `;
 
     // Header
     let html = `
-         <h1 style="text-align:center; border-bottom:2px solid #333; padding-bottom:10px;">지출 품의서</h1>
-         <div style="display:flex; justify-content:space-between; margin-top:20px;">
-             <p><strong>문서명:</strong> ${data.docName}</p>
-             <p><strong>작성일:</strong> ${new Date(data.date).toLocaleDateString()}</p>
-         </div>
-         <table style="width:100%; border-collapse:collapse; margin-top:20px; font-size:12px;">
-             <thead>
-                 <tr style="background:#f0f0f0;">
-                     <th style="border:1px solid #ccc; padding:8px;">순번</th>
-                     <th style="border:1px solid #ccc; padding:8px;">예산항목</th>
-                     <th style="border:1px solid #ccc; padding:8px;">물품명</th>
-                     <th style="border:1px solid #ccc; padding:8px;">규격</th>
-                     <th style="border:1px solid #ccc; padding:8px;">수량</th>
-                     <th style="border:1px solid #ccc; padding:8px;">단가</th>
-                     <th style="border:1px solid #ccc; padding:8px;">배송비</th>
-                     <th style="border:1px solid #ccc; padding:8px;">합계</th>
-                     <th style="border:1px solid #ccc; padding:8px;">구입처</th>
-                 </tr>
-             </thead>
-             <tbody>
-     `;
+        <h1 style="text-align:center; font-size:24px; font-weight:bold; margin-bottom:30px; border-bottom:3px solid #000; padding-bottom:15px;">지출 품의서</h1>
+        
+        <div style="margin-bottom:20px; font-size:14px;">
+            <p style="margin:5px 0;"><strong>문서 제목:</strong> ${data.docName}</p>
+            <p style="margin:5px 0;"><strong>작성일:</strong> ${new Date(data.date).toLocaleDateString()}</p>
+        </div>
+
+        <h2 style="font-size:16px; font-weight:bold; margin-bottom:10px; border-left:4px solid #333; padding-left:10px;">구입 목록 및 항목별 지출 예산 산출내역</h2>
+        
+        <table style="width:100%; border-collapse:collapse; font-size:11px; text-align:center;">
+            <thead>
+                <tr style="background:#f2f2f2; border-top:2px solid #000; border-bottom:1px solid #000;">
+                    <th style="border:1px solid #ccc; padding:8px; width:40px;">순번</th>
+                    <th style="border:1px solid #ccc; padding:8px;">세부항목</th>
+                    <th style="border:1px solid #ccc; padding:8px;">원가통계비목</th>
+                    <th style="border:1px solid #ccc; padding:8px;">산출내역</th>
+                    <th style="border:1px solid #ccc; padding:8px;">물품명</th>
+                    <th style="border:1px solid #ccc; padding:8px;">규격</th>
+                    <th style="border:1px solid #ccc; padding:8px; width:40px;">수량</th>
+                    <th style="border:1px solid #ccc; padding:8px;">단가</th>
+                    <th style="border:1px solid #ccc; padding:8px;">배송비</th>
+                    <th style="border:1px solid #ccc; padding:8px;">합계</th>
+                    <th style="border:1px solid #ccc; padding:8px;">구입처</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
 
     data.items.forEach((item, idx) => {
+        // Lookup full budget info
+        // window.appState.budgetItems has [세부항목, 원가통계비목, 산출내역, ...]
+        const budgetInfo = window.appState.budgetItems.find(b => b['산출내역'] === item.budgetName) || {};
+
+        const detailItem = budgetInfo['세부항목'] || '-';
+        const costItem = budgetInfo['원가통계비목'] || '-';
+
         html += `
-             <tr>
-                 <td style="border:1px solid #ccc; padding:8px; text-align:center;">${idx + 1}</td>
-                 <td style="border:1px solid #ccc; padding:8px;">${item.budgetName}</td>
-                 <td style="border:1px solid #ccc; padding:8px;">${item.name}</td>
-                 <td style="border:1px solid #ccc; padding:8px;">${item.spec}</td>
-                 <td style="border:1px solid #ccc; padding:8px; text-align:center;">${item.qty}</td>
-                 <td style="border:1px solid #ccc; padding:8px; text-align:right;">${item.price.toLocaleString()}</td>
-                 <td style="border:1px solid #ccc; padding:8px; text-align:right;">${item.shipping.toLocaleString()}</td>
-                 <td style="border:1px solid #ccc; padding:8px; text-align:right;">${item.total.toLocaleString()}</td>
-                 <td style="border:1px solid #ccc; padding:8px;">${item.vendor}</td>
-             </tr>
-         `;
+            <tr>
+                <td style="border:1px solid #ccc; padding:6px;">${idx + 1}</td>
+                <td style="border:1px solid #ccc; padding:6px;">${detailItem}</td>
+                <td style="border:1px solid #ccc; padding:6px;">${costItem}</td>
+                <td style="border:1px solid #ccc; padding:6px;">${item.budgetName}</td>
+                <td style="border:1px solid #ccc; padding:6px;">${item.name}</td>
+                <td style="border:1px solid #ccc; padding:6px;">${item.spec}</td>
+                <td style="border:1px solid #ccc; padding:6px;">${item.qty}</td>
+                <td style="border:1px solid #ccc; padding:6px; text-align:right;">${item.price.toLocaleString()}</td>
+                <td style="border:1px solid #ccc; padding:6px; text-align:right;">${item.shipping.toLocaleString()}</td>
+                <td style="border:1px solid #ccc; padding:6px; text-align:right;">${item.total.toLocaleString()}</td>
+                <td style="border:1px solid #ccc; padding:6px;">${item.vendor}</td>
+            </tr>
+        `;
     });
 
     html += `
-             </tbody>
-             <tfoot>
-                 <tr>
-                     <td colspan="7" style="border:1px solid #ccc; padding:8px; text-align:right; font-weight:bold;">총 합계</td>
-                     <td colspan="2" style="border:1px solid #ccc; padding:8px; text-align:right; font-weight:bold; font-size:14px; background:#f9f9f9;">${data.totalAmount.toLocaleString()}원</td>
-                 </tr>
-             </tfoot>
-         </table>
-     `;
+            </tbody>
+            <tfoot>
+                <tr style="background:#f9f9f9; border-top:2px solid #000;">
+                    <td colspan="9" style="border:1px solid #ccc; padding:10px; text-align:center; font-weight:bold; font-size:14px;">총 액</td>
+                    <td colspan="2" style="border:1px solid #ccc; padding:10px; text-align:right; font-weight:bold; font-size:14px;">${data.totalAmount.toLocaleString()} 원</td>
+                </tr>
+            </tfoot>
+        </table>
+    `;
 
     printable.innerHTML = html;
+
+    // Append to body to ensure rendering context
+    document.body.appendChild(printable);
 
     var opt = {
         margin: 10,
         filename: `${data.docName}_품의서.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' } // Landscape might be better for many columns
     };
 
-    html2pdf().from(printable).set(opt).save();
+    html2pdf().from(printable).set(opt).save().then(() => {
+        // Cleanup
+        document.body.removeChild(printable);
+    });
 }
