@@ -155,8 +155,63 @@
             <section id="tab3" class="tab-content">
                 <div class="card">
                     <h2>📜 지출 내역 관리</h2>
-                    <div class="history-list" id="historyList">
-                        <!-- History Items -->
+
+                    <!-- List View -->
+                    <div id="historyListView">
+                        <div class="history-list" id="historyList">
+                            <!-- History Items -->
+                        </div>
+                    </div>
+
+                    <!-- Detail/Edit View -->
+                    <div id="historyDetailView" class="hidden">
+                        <div class="detail-header">
+                            <button id="backToListBtn" class="btn secondary small"><i
+                                    class="fa-solid fa-arrow-left"></i> 목록으로</button>
+                            <h3 style="margin:0;">내역 상세/수정</h3>
+                        </div>
+
+                        <div class="form-group" style="margin-top:20px;">
+                            <label>문서명</label>
+                            <input type="text" id="editDocName">
+                        </div>
+
+                        <div class="items-section">
+                            <div class="items-header">
+                                <h4>물품 목록</h4>
+                                <div class="item-actions">
+                                    <button id="editAddRowBtn" class="btn small"><i class="fa-solid fa-plus"></i> 행
+                                        추가</button>
+                                </div>
+                            </div>
+                            <table id="editItemsTable">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 5%;">삭제</th>
+                                        <th style="width: 20%;">예산항목</th>
+                                        <th>물품명</th>
+                                        <th style="width: 10%;">규격</th>
+                                        <th style="width: 8%;">수량</th>
+                                        <th style="width: 12%;">단가</th>
+                                        <th style="width: 12%;">총액</th>
+                                        <th style="width: 15%;">구입처</th>
+                                        <th style="width: 10%;">배송비</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="editItemsTableBody"></tbody>
+                            </table>
+                        </div>
+
+                        <div class="summary-area">
+                            <span>총 합계: <strong id="editTotalAmount">0</strong> 원</span>
+                        </div>
+
+                        <div class="action-buttons">
+                            <button id="deleteHistoryBtn" class="btn error"><i class="fa-solid fa-trash"></i>
+                                삭제하기</button>
+                            <button id="updateHistoryBtn" class="btn primary"><i class="fa-solid fa-pen-to-square"></i>
+                                수정사항 저장</button>
+                        </div>
                     </div>
                 </div>
             </section>
