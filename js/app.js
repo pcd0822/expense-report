@@ -263,7 +263,6 @@ async function loadInitialData(forceLocal = false) {
     } catch (e) {
         console.error(e);
     } finally {
-        ```
         UI.showLoading(false);
     }
 }
@@ -280,111 +279,111 @@ function generateAndPrintPDF(data) {
     const fontStyle = "font-family: 'Malgun Gothic', 'Dotum', 'AppleGothic', 'sans-serif';";
 
     let htmlContent = `
-            < !DOCTYPE html >
-                <html>
-                    <head>
-                        <title>${data.docName}</title>
-                        <style>
-                            @media print {
-                                @page {size: A4 landscape; margin: 10mm; }
-                            body {-webkit - print - color - adjust: exact; }
-                }
-                            body {
-                                ${fontStyle}
+            <!DOCTYPE html>
+            <html>
+                <head>
+                    <title>${data.docName}</title>
+                    <style>
+                        @media print {
+                            @page { size: A4 landscape; margin: 10mm; }
+                            body { -webkit-print-color-adjust: exact; }
+                        }
+                        body {
+                            ${fontStyle}
                             margin: 0;
                             padding: 20px;
                             color: #000;
                             background: #fff;
-                }
-                            .container {
-                                width: 100%;
+                        }
+                        .container {
+                            width: 100%;
                             max-width: 297mm;
                             margin: 0 auto;
-                }
-                            h1 {
-                                text - align: center;
+                        }
+                        h1 {
+                            text-align: center;
                             font-size: 24pt;
                             font-weight: bold;
                             margin-bottom: 30px;
                             border-bottom: 3px solid #000;
                             padding-bottom: 15px;
-                }
-                            .meta {
-                                margin - bottom: 20px;
+                        }
+                        .meta {
+                            margin-bottom: 20px;
                             font-size: 11pt;
                             display: flex;
                             justify-content: space-between;
-                }
-                            h2 {
-                                font - size: 14pt;
+                        }
+                        h2 {
+                            font-size: 14pt;
                             font-weight: bold;
                             margin-bottom: 10px;
                             border-left: 5px solid #333;
                             padding-left: 10px;
-                }
-                            table {
-                                width: 100%;
+                        }
+                        table {
+                            width: 100%;
                             border-collapse: collapse;
                             font-size: 10pt;
                             text-align: center;
-                }
-                            th {
-                                background - color: #f2f2f2 !important;
+                        }
+                        th {
+                            background-color: #f2f2f2 !important;
                             border-top: 2px solid #000;
                             border-bottom: 1px solid #000;
                             border-left: 1px solid #ccc;
                             border-right: 1px solid #ccc;
                             padding: 10px 5px;
                             font-weight: bold;
-                }
-                            td {
-                                border: 1px solid #ccc;
+                        }
+                        td {
+                            border: 1px solid #ccc;
                             padding: 8px 5px;
-                }
-                            .num-cell {text - align: right; padding-right: 10px; }
-                            tfoot td {
-                                background - color: #f9f9f9 !important;
+                        }
+                        .num-cell { text-align: right; padding-right: 10px; }
+                        tfoot td {
+                            background-color: #f9f9f9 !important;
                             border-top: 2px solid #000;
                             font-weight: bold;
                             font-size: 12pt;
-                }
-                        </style>
-                    </head>
-                    <body>
-                        <div class="container">
-                            <h1>지출 품의서</h1>
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <h1>지출 품의서</h1>
 
-                            <div class="meta">
-                                <span><strong>문서 제목:</strong> ${data.docName}</span>
-                                <span><strong>작성일:</strong> ${new Date(data.date).toLocaleDateString()}</span>
-                            </div>
+                        <div class="meta">
+                            <span><strong>문서 제목:</strong> ${data.docName}</span>
+                            <span><strong>작성일:</strong> ${new Date(data.date).toLocaleDateString()}</span>
+                        </div>
 
-                            <h2>구입 목록 및 항목별 지출 예산 산출내역</h2>
+                        <h2>구입 목록 및 항목별 지출 예산 산출내역</h2>
 
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th style="width:5%;">순번</th>
-                                        <th style="width:12%;">세부항목</th>
-                                        <th style="width:12%;">원가통계비목</th>
-                                        <th style="width:15%;">산출내역</th>
-                                        <th style="width:15%;">물품명</th>
-                                        <th style="width:10%;">규격</th>
-                                        <th style="width:5%;">수량</th>
-                                        <th style="width:8%;">단가</th>
-                                        <th style="width:8%;">배송비</th>
-                                        <th style="width:10%;">합계</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    `;
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width:5%;">순번</th>
+                                    <th style="width:12%;">세부항목</th>
+                                    <th style="width:12%;">원가통계비목</th>
+                                    <th style="width:15%;">산출내역</th>
+                                    <th style="width:15%;">물품명</th>
+                                    <th style="width:10%;">규격</th>
+                                    <th style="width:5%;">수량</th>
+                                    <th style="width:8%;">단가</th>
+                                    <th style="width:8%;">배송비</th>
+                                    <th style="width:10%;">합계</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                `;
 
     data.items.forEach((item, idx) => {
-        const budgetInfo = window.appState.budgetItems.find(b => b['산출내역'] === item.budgetName) || { };
-                                    const detailItem = budgetInfo['세부항목'] || '-';
-                                    const costItem = budgetInfo['원가통계비목'] || '-';
+        const budgetInfo = window.appState.budgetItems.find(b => b['산출내역'] === item.budgetName) || {};
+        const detailItem = budgetInfo['세부항목'] || '-';
+        const costItem = budgetInfo['원가통계비목'] || '-';
 
-                                    htmlContent += `
+        htmlContent += `
                                     <tr>
                                         <td>${idx + 1}</td>
                                         <td>${detailItem}</td>
@@ -400,7 +399,7 @@ function generateAndPrintPDF(data) {
                                     `;
     });
 
-                                    htmlContent += `
+    htmlContent += `
                                 </tbody>
                                 <tfoot>
                                     <tr>
@@ -414,10 +413,6 @@ function generateAndPrintPDF(data) {
                                 <p>(인)</p>
                             </div>
                         </div>
-
-                        <script>
-                            window.onload = function() {window.print(); }
-                        </script>
                     </body>
                 </html>
         `;
