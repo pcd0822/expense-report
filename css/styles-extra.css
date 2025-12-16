@@ -12,9 +12,8 @@
     font-size: 0.9rem !important;
 }
 
-.shared-mode .main-header {
-    display: none;
-}
+/* Shared Header hidden rule removed */
+/* .shared-mode .main-header { display: none; } */
 
 /* Make table cells handle selects and inputs better */
 .budget-select {
