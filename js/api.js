@@ -116,19 +116,5 @@ const API = {
 
         const response = await fetch(url, { method: 'POST', body: formData });
         return await response.json();
-    },
-
-    async generatePDF(data) {
-        const url = CONFIG.getScriptUrl();
-        if (!url) {
-            throw new Error('PDF 생성은 Google Sheets 연동이 필요합니다.');
-        }
-
-        const formData = new FormData();
-        formData.append('action', 'generatePDF');
-        formData.append('data', JSON.stringify(data));
-
-        const response = await fetch(url, { method: 'POST', body: formData });
-        return await response.json();
     }
 };
