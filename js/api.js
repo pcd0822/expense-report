@@ -16,19 +16,13 @@ const API = {
     },
 
     async saveBudget(budgetItems) {
-        // In a real scenario with GAS, we send a POST request
         const url = CONFIG.getScriptUrl();
         if (!url) {
             // Mock mode
-            console.log("Mock Saving Budget:", budgetItems);
             localStorage.setItem('local_budget_data', JSON.stringify(budgetItems));
             return { success: true };
         }
 
-        // Use content type text/plain for GAS simple triggers to work with CORS sometimes, 
-        // but here we standard FormData approach which usually redirects. 
-        // For no-cors simple requests, we can't read response. 
-        // We will assume standard fetch for now, user might face CORS if not setup right.
         const formData = new FormData();
         formData.append('action', 'saveBudget');
         formData.append('data', JSON.stringify(budgetItems));
@@ -70,6 +64,17 @@ const API = {
             method: 'POST',
             body: formData
         });
+        return await response.json();
+    },
+
+    async getHistory() {
+        const url = CONFIG.getScriptUrl();
+        if (!url) {
+            // Mock
+            return JSON.parse(localStorage.getItem('local_history') || '[]');
+        }
+
+        const response = await fetch(`${url}?action=getHistory`);
         return await response.json();
     }
 };
