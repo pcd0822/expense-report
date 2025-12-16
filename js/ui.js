@@ -444,12 +444,12 @@ const UI = {
             <td>
                 <select class="table-input budget-select" required>${budgetOptions}</select>
             </td>
-            <td><input type="text" class="table-input item-name" value="${data ? data.name : ''}"></td>
-            <td><input type="text" class="table-input" name="spec" value="${data ? data.spec : ''}"></td>
-            <td><input type="text" class="table-input number-input qty-input" value="${data ? data.qty : ''}" placeholder="0"></td>
-            <td><input type="text" class="table-input number-input price-input" value="${data ? data.price : ''}" placeholder="0"></td>
-            <td style="text-align:right;"><span class="row-total">${data ? data.itemTotal.toLocaleString() : '0'}</span></td>
-            <td><input type="text" class="table-input" name="vendor" value="${data ? data.vendor : ''}"></td>
+            <td><input type="text" class="table-input item-name" value="${data ? (data.name || '') : ''}"></td>
+            <td><input type="text" class="table-input" name="spec" value="${data ? (data.spec || '') : ''}"></td>
+            <td><input type="text" class="table-input number-input qty-input" value="${data ? (data.qty || '') : ''}" placeholder="0"></td>
+            <td><input type="text" class="table-input number-input price-input" value="${data ? (data.price || '') : ''}" placeholder="0"></td>
+            <td style="text-align:right;"><span class="row-total">${data ? (data.itemTotal || (data.qty * data.price) || 0).toLocaleString() : '0'}</span></td>
+            <td><input type="text" class="table-input" name="vendor" value="${data ? (data.vendor || '') : ''}"></td>
             <td class="shipping-cell">
                  <div class="shipping-wrapper">
                     <label><input type="checkbox" class="shipping-check" ${data && data.shipping > 0 ? 'checked' : ''}> 별도</label>
