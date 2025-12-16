@@ -3,15 +3,30 @@ let chartInstance = null;
 
 const UI = {
     init() {
+        this.checkSharedMode();
         this.setupTabs();
-        this.addInitialRows();
-        this.renderHistory();
+        this.addInitialRows(); // Will populate rows with new structure
+
+        // Initial load happens in app.js
+    },
+
+    checkSharedMode() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const mode = urlParams.get('mode');
+
+        if (mode === 'shared') {
+            document.body.classList.add('shared-mode');
+            // Hide Tab 1 and Tab 4 buttons and content
+            document.querySelector('[data-tab="tab1"]').classList.add('hidden');
+            document.querySelector('[data-tab="tab4"]').classList.add('hidden');
+
+            // Switch to Tab 2 by default
+            this.switchTab('tab2');
+        }
     },
 
     setupTabs() {
         const navBtns = document.querySelectorAll('.nav-btn');
-        // const contents = document.querySelectorAll('.tab-content'); // Not needed if we use CSS class
-
         navBtns.forEach(btn => {
             btn.addEventListener('click', () => {
                 const targetId = btn.getAttribute('data-tab');
@@ -22,6 +37,8 @@ const UI = {
 
     switchTab(tabId) {
         document.querySelectorAll('.nav-btn').forEach(btn => {
+            // In shared mode, don't show active state for hidden buttons (safety)
+            if (btn.classList.contains('hidden')) return;
             btn.classList.toggle('active', btn.getAttribute('data-tab') === tabId);
         });
         document.querySelectorAll('.tab-content').forEach(content => {
@@ -41,6 +58,7 @@ const UI = {
 
     renderBudgetPreview(data) {
         const tbody = document.querySelector('#budgetTable tbody');
+        if (!tbody) return;
         tbody.innerHTML = '';
         data.forEach(item => {
             const tr = document.createElement('tr');
@@ -54,18 +72,44 @@ const UI = {
         });
     },
 
+    // Used to populate the dropdowns in rows
+    getBudgetOptionsHTML() {
+        // AppState should be accessed globally or passed. 
+        // We'll access the global appState from app.js via window or just rely on the stored array in app.js if we exported it?
+        // Better: app.js updates UI with data. But rows are dynamic.
+        // We will store budget items in UI for reference.
+        const items = window.appState ? window.appState.budgetItems : [];
+        if (items.length === 0) return '<option value="">예산 없음</option>';
+
+        return items.map(item => `<option value="${item['산출내역']}">${item['산출내역']}</option>`).join('');
+    },
+
+    // Updated to remove global dropdown update, not needed anymore
     updateBudgetDropdown(data) {
-        const select = document.getElementById('budgetSelect');
-        select.innerHTML = '<option value="">선택해주세요</option>';
-        data.forEach(item => {
-            const option = document.createElement('option');
-            option.value = item['산출내역'];
-            option.textContent = item['산출내역'];
-            select.appendChild(option);
+        // Just update internal ref or re-render existing rows?
+        // For simplicity, we just clear and re-add rows or let user add new rows.
+        // Existing rows might loose selection if we strictly re-render.
+        // We'll just update the template for NEW rows.
+        // If we wanted to update existing rows options, we'd need to iterate them.
+        const rows = document.querySelectorAll('#itemsTableBody tr');
+        rows.forEach(row => {
+            const select = row.querySelector('.budget-select');
+            const currentVal = select.value;
+            select.innerHTML = '<option value="">선택</option>' + this.getBudgetOptionsHTML();
+            select.value = currentVal;
         });
     },
 
-    renderBudgetChart(items, currentIndex) {
+    renderBudgetChart(items) {
+        // With multi-item budget selection, the chart could either show:
+        // 1. Total overview of ALL budgets (too messy)
+        // 2. Just a specific one selected?
+        // The user prompt said: "Upload budget items... show donut graph of current balance... arrow buttons to flip through".
+        // This requirement remains VALID. We just need to visualize the budgets available.
+        // So we keep the same logic: Iterate through available budgets.
+
+        // Global index
+        const currentIndex = window.appState ? window.appState.currentBudgetIndex : 0;
         const currentItem = items[currentIndex];
         const label = document.getElementById('currentBudgetName');
         const ctx = document.getElementById('budgetChart');
@@ -110,6 +154,8 @@ const UI = {
     },
 
     addInitialRows() {
+        const tbody = document.getElementById('itemsTableBody');
+        tbody.innerHTML = ''; // clear first
         for (let i = 0; i < 5; i++) {
             this.addItemRow();
         }
@@ -118,16 +164,73 @@ const UI = {
     addItemRow() {
         const tbody = document.getElementById('itemsTableBody');
         const tr = document.createElement('tr');
+
+        // Budget Options
+        const budgetOptions = '<option value="">선택</option>' + this.getBudgetOptionsHTML();
+
         tr.innerHTML = `
-            <td class="check-col hidden"><input type="checkbox" class="row-check"></td>
+            <td class="check-col hidden" style="text-align:center;"><input type="checkbox" class="row-check"></td>
+            <td>
+                <select class="table-input budget-select" required>
+                    ${budgetOptions}
+                </select>
+            </td>
             <td><input type="text" class="table-input item-name" name="name" required></td>
             <td><input type="text" class="table-input" name="spec"></td>
-            <td><input type="number" class="table-input qty-input" name="qty" min="1" value="0"></td>
-            <td><input type="number" class="table-input price-input" name="price" min="0" value="0"></td>
-            <td><span class="row-total">0</span></td>
+            <td><input type="text" class="table-input number-input qty-input" name="qty" placeholder="0"></td>
+            <td><input type="text" class="table-input number-input price-input" name="price" placeholder="0"></td>
+            <td style="text-align:right;"><span class="row-total">0</span></td>
             <td><input type="text" class="table-input" name="vendor"></td>
+            <td class="shipping-cell">
+                <div class="shipping-wrapper">
+                    <label><input type="checkbox" class="shipping-check"> 별도</label>
+                    <input type="text" class="table-input number-input shipping-input hidden" placeholder="금액">
+                </div>
+            </td>
         `;
         tbody.appendChild(tr);
+
+        // Add event listeners for new inputs
+        const numberInputs = tr.querySelectorAll('.number-input');
+        numberInputs.forEach(input => {
+            input.addEventListener('input', (e) => {
+                this.formatNumberInput(e.target);
+                this.calculateRowTotal(tr);
+                this.calculateGrandTotal();
+            });
+        });
+
+        const shippingCheck = tr.querySelector('.shipping-check');
+        const shippingInput = tr.querySelector('.shipping-input');
+        shippingCheck.addEventListener('change', () => {
+            if (shippingCheck.checked) {
+                shippingInput.classList.remove('hidden');
+                shippingInput.focus();
+            } else {
+                shippingInput.classList.add('hidden');
+                shippingInput.value = '';
+                this.calculateRowTotal(tr); // re-calc to remove shipping
+                this.calculateGrandTotal();
+            }
+        });
+    },
+
+    formatNumberInput(input) {
+        let value = input.value.replace(/,/g, '');
+        if (isNaN(value) || value === '') {
+            // allow empty but not invalid chars if possible, removing non-digits
+            value = value.replace(/[^0-9]/g, '');
+        }
+        if (value) {
+            input.value = Number(value).toLocaleString();
+        } else {
+            input.value = '';
+        }
+    },
+
+    parseLocaleNumber(stringNumber) {
+        if (!stringNumber) return 0;
+        return Number(stringNumber.replace(/,/g, ''));
     },
 
     toggleDeleteMode() {
@@ -150,125 +253,185 @@ const UI = {
             btn.innerHTML = '<i class="fa-solid fa-trash"></i> 삭제 모드';
             checkCols.forEach(col => col.classList.add('hidden'));
 
-            this.calculateGrandTotal(); // Re-calc 
+            this.calculateGrandTotal();
         }
     },
 
     calculateRowTotal(row) {
-        const qty = Number(row.querySelector('.qty-input').value) || 0;
-        const price = Number(row.querySelector('.price-input').value) || 0;
-        const total = qty * price;
+        const qty = this.parseLocaleNumber(row.querySelector('.qty-input').value);
+        const price = this.parseLocaleNumber(row.querySelector('.price-input').value);
+        let total = qty * price;
+
         row.querySelector('.row-total').textContent = total.toLocaleString();
-        row.dataset.total = total;
+        row.dataset.itemTotal = total; // Item total without shipping
     },
 
     calculateGrandTotal() {
         const rows = document.querySelectorAll('#itemsTableBody tr');
-        let sum = 0;
+        let grandTotal = 0;
         rows.forEach(row => {
-            sum += Number(row.dataset.total || 0);
+            let itemTotal = Number(row.dataset.itemTotal || 0);
+            let shipping = 0;
+            const shipCheck = row.querySelector('.shipping-check');
+            if (shipCheck && shipCheck.checked) {
+                shipping = this.parseLocaleNumber(row.querySelector('.shipping-input').value);
+            }
+            grandTotal += (itemTotal + shipping);
         });
 
-        const shipping = document.getElementById('shippingToggle').checked ?
-            (Number(document.getElementById('shippingCost').value) || 0) : 0;
-
-        const total = sum + shipping;
-        document.getElementById('totalAmount').textContent = total.toLocaleString();
-
-        return total;
+        document.getElementById('totalAmount').textContent = grandTotal.toLocaleString();
+        return grandTotal;
     },
 
     getExpenditureFormData() {
         const docName = document.getElementById('docName').value;
-        const budgetName = document.getElementById('budgetSelect').value;
-
-        if (!docName || !budgetName) {
-            alert('문서명과 예산 항목을 선택해주세요.');
+        if (!docName) {
+            alert('문서명을 입력해주세요.');
             return null;
         }
 
         const items = [];
-        document.querySelectorAll('#itemsTableBody tr').forEach(row => {
+        let valid = true;
+        const rows = document.querySelectorAll('#itemsTableBody tr');
+
+        for (let row of rows) {
             const name = row.querySelector('input[name="name"]').value;
-            if (!name) return; // Skip empty rows
+            if (!name) continue; // Skip empty rows
+
+            const budgetName = row.querySelector('.budget-select').value;
+            if (!budgetName) {
+                alert('모든 물품의 예산 항목을 선택해주세요.');
+                return null;
+            }
+
+            const qty = this.parseLocaleNumber(row.querySelector('.qty-input').value);
+            const price = this.parseLocaleNumber(row.querySelector('.price-input').value);
+            const itemTotal = qty * price;
+
+            let shipping = 0;
+            if (row.querySelector('.shipping-check').checked) {
+                shipping = this.parseLocaleNumber(row.querySelector('.shipping-input').value);
+            }
 
             items.push({
+                budgetName: budgetName,
                 name: name,
                 spec: row.querySelector('input[name="spec"]').value,
-                qty: Number(row.querySelector('input[name="qty"]').value),
-                price: Number(row.querySelector('input[name="price"]').value),
-                total: Number(row.dataset.total || 0),
+                qty: qty,
+                price: price,
+                itemTotal: itemTotal, // pure price
+                shipping: shipping,
+                total: itemTotal + shipping, // row total
                 vendor: row.querySelector('input[name="vendor"]').value
             });
-        });
+        }
 
         if (items.length === 0) {
             alert('최소 1개 이상의 물품을 입력해주세요.');
             return null;
         }
 
-        const shipping = document.getElementById('shippingToggle').checked ?
-            (Number(document.getElementById('shippingCost').value) || 0) : 0;
-
         return {
             docName,
-            budgetName,
             items,
-            shipping,
-            totalAmount: this.calculateGrandTotal(), // ensure up to date
+            totalAmount: this.calculateGrandTotal(),
             date: new Date().toISOString()
         };
     },
 
-    renderHistory() {
+    async renderHistory() {
         const historyList = document.getElementById('historyList');
-        // Fetch from local for now, sync with API logic is in app.js init
-        const history = JSON.parse(localStorage.getItem('local_history') || '[]');
+        historyList.innerHTML = '<p class="loading-text">내역을 불러오는 중...</p>';
 
-        historyList.innerHTML = '';
-        if (history.length === 0) {
-            historyList.innerHTML = '<p style="text-align:center; color:#999;">아직 작성된 지출 품의서가 없습니다.</p>';
-            return;
-        }
+        try {
+            let history = [];
 
-        const table = document.createElement('table');
-        table.innerHTML = `
-            <thead>
-                <tr>
-                    <th>문서명</th>
-                    <th>예산항목</th>
-                    <th>총액</th>
-                    <th>작성일</th>
-                    <th>작업</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        `;
+            if (CONFIG.getScriptUrl()) {
+                // Fetch from server if connected
+                const data = await API.getHistory();
+                // Map server data to frontend format
+                history = data.map(row => {
+                    // row: {Date, DocumentName, TotalAmount, ItemsJSON, ...} keys depend on header case
+                    // Headers in server.gs: ['Date', 'DocumentName', 'TotalAmount', 'ItemsJSON']
+                    // doGet returns object with keys matching headers.
+                    return {
+                        docName: row.DocumentName,
+                        totalAmount: row.TotalAmount,
+                        date: row.Date,
+                        items: JSON.parse(row.ItemsJSON || '[]') // Server stores stringified JSON
+                    };
+                });
+            } else {
+                // Local only
+                history = JSON.parse(localStorage.getItem('local_history') || '[]');
+            }
 
-        history.forEach((h, idx) => {
-            const tr = document.createElement('tr');
-            const date = new Date(h.date).toLocaleDateString();
-            tr.innerHTML = `
-                <td>${h.docName}</td>
-                <td>${h.budgetName}</td>
-                <td>${h.totalAmount.toLocaleString()}원</td>
-                <td>${date}</td>
-                <td>
-                    <button class="btn small primary" onclick="viewHistoryItem(${idx})">조회</button>
-                    <!-- Edit logic omitted for brevity in MVP -->
-                </td>
+            // Descending order
+            history.reverse();
+
+            historyList.innerHTML = '';
+            if (history.length === 0) {
+                historyList.innerHTML = '<p style="text-align:center; color:#999;">아직 작성된 지출 품의서가 없습니다.</p>';
+                return;
+            }
+
+            const table = document.createElement('table');
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th>문서명</th>
+                        <th>총액</th>
+                        <th>작성일</th>
+                        <th>작업</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
             `;
-            table.querySelector('tbody').appendChild(tr);
+
+            history.forEach((h, idx) => {
+                const tr = document.createElement('tr');
+                const d = new Date(h.date);
+                const dateStr = isNaN(d) ? h.date : d.toLocaleDateString();
+
+                tr.innerHTML = `
+                    <td>${h.docName}</td>
+                    <td>${Number(h.totalAmount).toLocaleString()}원</td>
+                    <td>${dateStr}</td>
+                    <td>
+                        <button class="btn small primary" onclick="viewHistoryItem(${idx})">상세보기</button>
+                    </td>
+                `;
+                table.querySelector('tbody').appendChild(tr);
+            });
+            historyList.appendChild(table);
+
+            // Store simple history for view logic
+            window._tempHistory = history;
+
+        } catch (e) {
+            historyList.innerHTML = `<p class="error">내역을 불러오는데 실패했습니다: ${e.message}</p>`;
+        }
+    },
+
+    // Copy Shared Link Logic
+    copySharedLink() {
+        const url = new URL(window.location.href);
+        url.searchParams.set('mode', 'shared');
+        navigator.clipboard.writeText(url.toString()).then(() => {
+            alert('공유 링크가 복사되었습니다! 이 링크를 공유하면 예산 관리 탭이 보이지 않습니다.');
         });
-        historyList.appendChild(table);
     }
 };
 
-// Expose query function for inline onclick
 window.viewHistoryItem = (idx) => {
-    const history = JSON.parse(localStorage.getItem('local_history') || '[]');
-    const item = history[idx];
+    const item = window._tempHistory ? window._tempHistory[idx] : null;
     if (item) {
-        alert(JSON.stringify(item, null, 2)); // Simple view for now
+        // Pretty print items
+        let msg = `[${item.docName}]\n`;
+        item.items.forEach(i => {
+            msg += `- ${i.name} / ${i.qty}개 / ${i.total.toLocaleString()}원 (배송비: ${i.shipping})\n`;
+        });
+        msg += `\n총 합계: ${Number(item.totalAmount).toLocaleString()}원`;
+        alert(msg);
     }
 }
