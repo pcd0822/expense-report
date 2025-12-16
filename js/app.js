@@ -277,13 +277,14 @@ function generateAndPrintPDF(data) {
     printable.style.cssText = `
         padding: 40px; 
         ${fontStyle} 
-        width: 210mm; 
-        min-height: 297mm; 
+        width: 297mm; /* Landscape width */
+        min-height: 210mm; 
         background: white; 
         color: #000;
-        position: absolute; 
-        left: -9999px; 
+        position: fixed; /* Fixed helps with html2canvas scrolling issues */
+        left: 0; 
         top: 0;
+        z-index: -9999; /* Behind everything */
     `;
 
     // Header
@@ -361,7 +362,7 @@ function generateAndPrintPDF(data) {
         margin: 10,
         filename: `${data.docName}_품의서.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
+        html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' } // Landscape might be better for many columns
     };
 
