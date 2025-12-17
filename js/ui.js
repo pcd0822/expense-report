@@ -354,15 +354,22 @@ const UI = {
 
             if (CONFIG.getScriptUrl()) {
                 const data = await API.getHistory();
-                history = data.map(row => {
-                    return {
-                        id: row.ID || ('local_' + Date.now() + Math.random()),
-                        docName: row.DocumentName,
-                        totalAmount: row.TotalAmount,
-                        date: row.Date,
-                        items: JSON.parse(row.ItemsJSON || '[]')
-                    };
+
+                // Deduplicate by ID (Since we now store multiple rows per ID)
+                const uniqueHistoryMap = new Map();
+                data.forEach(row => {
+                    const id = row.ID || ('local_' + Date.now() + Math.random());
+                    if (!uniqueHistoryMap.has(id)) {
+                        uniqueHistoryMap.set(id, {
+                            id: id,
+                            docName: row.DocumentName,
+                            totalAmount: row.TotalAmount,
+                            date: row.Date,
+                            items: JSON.parse(row.ItemsJSON || '[]')
+                        });
+                    }
                 });
+                history = Array.from(uniqueHistoryMap.values());
             } else {
                 history = JSON.parse(localStorage.getItem('local_history') || '[]');
             }
