@@ -88,6 +88,13 @@ function setupEventListeners() {
         generateAndPrintPDF(formData);
     });
 
+    const excelBtn = document.getElementById('generateExcelBtn');
+    if (excelBtn) excelBtn.addEventListener('click', () => {
+        const formData = UI.getExpenditureFormData();
+        if (!formData) return;
+        ExcelHandler.generateRequestExcel(formData);
+    });
+
     // Submit
     const submitBtn = document.getElementById('submitRequestBtn');
     if (submitBtn) submitBtn.addEventListener('click', handleSubmit);
