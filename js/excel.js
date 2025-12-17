@@ -1,6 +1,10 @@
 
 const ExcelHandler = {
     downloadTemplate() {
+        if (typeof XLSX === 'undefined') {
+            alert('Excel 라이브러리가 로드되지 않았습니다. 인터넷 연결을 확인하거나 페이지를 새로고침해주세요.');
+            return;
+        }
         const headers = [['세부항목', '원가통계비목', '산출내역', '예산액']];
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.aoa_to_sheet(headers);
