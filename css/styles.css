@@ -1,15 +1,20 @@
 :root {
     /* Pastel Palette */
-    --primary-color: #FFB7B2; /* Pastel Red/Pink */
+    --primary-color: #FFB7B2;
+    /* Pastel Red/Pink */
     --primary-dark: #FF9E99;
-    --secondary-color: #B5EAD7; /* Pastel Green */
-    --accent-color: #C7CEEA; /* Pastel Purple/Blue */
-    --warning-color: #FFDAC1; /* Pastel Orange */
+    --secondary-color: #B5EAD7;
+    /* Pastel Green */
+    --accent-color: #C7CEEA;
+    /* Pastel Purple/Blue */
+    --warning-color: #FFDAC1;
+    /* Pastel Orange */
     --text-color: #555;
-    --bg-color: #FDF9F3; /* Warm White */
+    --bg-color: #FDF9F3;
+    /* Warm White */
     --card-bg: #FFFFFF;
     --border-radius: 16px;
-    --shadow: 0 4px 15px rgba(0,0,0,0.05);
+    --shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
     --font-heading: 'Gaegu', cursive;
     --font-body: 'Noto Sans KR', sans-serif;
 }
@@ -27,18 +32,31 @@ body {
     line-height: 1.6;
 }
 
-h1, h2, h3 {
+h1,
+h2,
+h3 {
     font-family: var(--font-heading);
     font-weight: 700;
 }
 
 .app-container {
-    max-width: 1200px;
+    max-width: 1800px;
     margin: 0 auto;
     padding: 20px;
 }
 
-/* Header */
+/* ... existing styles ... */
+
+input[type="text"],
+input[type="number"],
+select {
+    width: 100%;
+    padding: 10px;
+    /* Uniform padding */
+    border: 2px solid #eee;
+    border-radius: 10px;
+}
+
 .main-header {
     text-align: center;
     margin-bottom: 30px;
@@ -109,8 +127,15 @@ h1, h2, h3 {
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* Buttons */
@@ -171,23 +196,6 @@ label {
     font-weight: 500;
 }
 
-input[type="text"],
-input[type="number"],
-select {
-    width: 100%;
-    padding: 10px;
-    border: 2px solid #eee;
-    border-radius: 10px;
-    font-family: inherit;
-    font-size: 1rem;
-    transition: border-color 0.3s;
-}
-
-input:focus, select:focus {
-    outline: none;
-    border-color: var(--primary-color);
-}
-
 /* Upload Area */
 .upload-area {
     border: 3px dashed var(--accent-color);
@@ -222,7 +230,8 @@ table {
     min-width: 600px;
 }
 
-th, td {
+th,
+td {
     padding: 12px 15px;
     text-align: left;
     border-bottom: 1px solid #eee;
