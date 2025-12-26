@@ -60,15 +60,30 @@ const ExcelHandler = {
 
         // 2. Data
         const wsData = [headers];
+        let rowCount = 1;
         formData.items.forEach((item, index) => {
+            // 1. Main Item Row
+            const itemTotal = item.price * item.qty;
             wsData.push([
-                index + 1,
+                rowCount++,
                 item.name,
                 item.spec,
                 item.qty,
                 item.price,
-                item.total // Using total as requested contextually
+                itemTotal
             ]);
+
+            // 2. Shipping Cost Row (if applicable)
+            if (item.shipping && item.shipping > 0) {
+                wsData.push([
+                    rowCount++,
+                    `(배송비) ${item.name}`,
+                    '', // Spec empty for shipping
+                    1,   // Qty 1
+                    item.shipping, // Unit Price = Shipping Cost
+                    item.shipping  // Total = Shipping Cost
+                ]);
+            }
         });
 
         const ws = XLSX.utils.aoa_to_sheet(wsData);
